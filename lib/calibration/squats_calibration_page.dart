@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:revivetest2/postcalibration/squats_counter.dart';
 
 class SquatsCalibration extends StatefulWidget {
   const SquatsCalibration({super.key});
@@ -14,12 +15,12 @@ class SquatsCalibration extends StatefulWidget {
 
 class _SquatsCalibrationState extends State<SquatsCalibration> {
   // Define variables to store the min and max values
-  double _permanentMinSquatsXAngle = double.infinity;
-  double _permanentMaxSquatsXAngle = 0.0;
-  double _minSquatsXAngle = 0.0;
-  double _maxSquatsXAngle = 0.0;
-  bool _isMinSquatsCalibrated = false;
-  bool _isMaxSquatsCalibrated = false;
+  double _permanenttopSquatsYAngle = 0.0;
+  double _permanentbottomSquatsYAngle = double.infinity;
+  double _topSquatsYAngle = 0.0;
+  double _bottomSquatsYAngle = 0.0;
+  bool _istopSquatsCalibrated = false;
+  bool _isbottomSquatsCalibrated = false;
 
   // Create a reference to the Firebase RTDB
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref();
@@ -27,16 +28,17 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
   @override
   void initState() {
     super.initState();
+
     _databaseRef.child('sensor_data').onChildChanged.listen((event) {
-      if (event.snapshot.key == 'xAngle') {
-        double xAngle = double.parse(event.snapshot.value.toString());
+      if (event.snapshot.key == 'yAngle') {
+        double yAngle = double.parse(event.snapshot.value.toString());
         if (mounted) {
           setState(() {
-            if (_minSquatsXAngle == 0.0 || xAngle < _minSquatsXAngle) {
-              _minSquatsXAngle = xAngle;
+            if (_topSquatsYAngle == 0.0 || yAngle > _topSquatsYAngle) {
+              _topSquatsYAngle = yAngle;
             }
-            if (_maxSquatsXAngle == 0.0 || xAngle > _maxSquatsXAngle) {
-              _maxSquatsXAngle = xAngle;
+            if (_bottomSquatsYAngle == 0.0 || yAngle < _bottomSquatsYAngle) {
+              _bottomSquatsYAngle = yAngle;
             }
           });
         }
@@ -98,7 +100,7 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
                 children: [
                   ElevatedButton(
                     onPressed: () async {
-                      await _startMinCalibrationAsync();
+                      await _starttopSquatsCalibrationAsync();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.lightGreen,
@@ -117,7 +119,7 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
                   SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: () async {
-                      await _startMaxCalibrationAsync();
+                      await _startbottomSquatsCalibrationAsync();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.lightGreen,
@@ -135,8 +137,8 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
                   ),
                   SizedBox(height: 10),
                   Visibility(
-                    visible: _isMinSquatsCalibrated ||
-                        _isMaxSquatsCalibrated, // show only when either min or max is visible
+                    visible: _istopSquatsCalibrated ||
+                        _isbottomSquatsCalibrated, // show only when either min or max is visible
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.lightGreen[
@@ -149,9 +151,9 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_isMinSquatsCalibrated)
+                          if (_istopSquatsCalibrated)
                             Text(
-                              'Initial Angle: ${_permanentMinSquatsXAngle.toStringAsFixed(2)}\u00B0',
+                              'Initial Angle: ${_permanenttopSquatsYAngle.toStringAsFixed(2)}\u00B0',
                               style: GoogleFonts.raleway(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -159,9 +161,9 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
                               ),
                             ),
                           SizedBox(height: 10),
-                          if (_isMaxSquatsCalibrated)
+                          if (_isbottomSquatsCalibrated)
                             Text(
-                              'Final Angle: ${_permanentMaxSquatsXAngle.toStringAsFixed(2)}\u00B0',
+                              'Final Angle: ${_permanentbottomSquatsYAngle.toStringAsFixed(2)}\u00B0',
                               style: GoogleFonts.raleway(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -174,16 +176,30 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
                   ),
                   SizedBox(height: 20),
                   AnimatedOpacity(
-                    opacity: _isMinSquatsCalibrated && _isMaxSquatsCalibrated
+                    opacity: _istopSquatsCalibrated && _isbottomSquatsCalibrated
                         ? 1.0
                         : 0.0,
                     duration: Duration(milliseconds: 500),
                     curve: Curves.easeInOut,
                     child: Visibility(
-                      visible: _isMinSquatsCalibrated && _isMaxSquatsCalibrated,
+                      visible:
+                          _istopSquatsCalibrated && _isbottomSquatsCalibrated,
                       child: ElevatedButton(
-                        onPressed: () {
-                          // TODO: Add functionality for ready button
+                        onPressed: () async {
+                          final userUid =
+                              FirebaseAuth.instance.currentUser?.uid;
+                          final DatabaseReference angleDataRef =
+                              FirebaseDatabase.instance
+                                  .ref()
+                                  .child('users/$userUid/angle_data');
+                          angleDataRef.update({
+                            'squatBool': true,
+                          });
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => SquatsCounter()),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.lightGreen,
@@ -194,7 +210,7 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
                               horizontal: 40, vertical: 20),
                         ),
                         child: Text(
-                          'Ready to Start ?',
+                          'Ready to Start?',
                           style: GoogleFonts.raleway(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -212,15 +228,21 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
     );
   }
 
-  Future<void> _startMinCalibrationAsync() async {
+  Future<void> _starttopSquatsCalibrationAsync() async {
+    final userUid = FirebaseAuth.instance.currentUser?.uid;
+    final DatabaseReference boolRef =
+        FirebaseDatabase.instance.ref().child('users/$userUid/angle_data');
+    boolRef.set({
+      'squatBool': false,
+    });
     // Reset the min value before starting calibration
     if (mounted) {
       setState(() {
-        _minSquatsXAngle = 0.0;
-        _permanentMinSquatsXAngle = double.infinity;
+        _topSquatsYAngle = 0.0;
+        _permanenttopSquatsYAngle = double.infinity;
       });
     }
-    _isMinSquatsCalibrated = false;
+    _istopSquatsCalibrated = false;
     // Display a dialog to indicate that calibration is in progress
     showDialog(
       barrierDismissible: false, // set barrierDismissible to false
@@ -234,39 +256,39 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
     // Wait for 5 seconds to collect samples
     await Future.delayed(Duration(seconds: 5));
 
-    if (_minSquatsXAngle < _permanentMinSquatsXAngle) {
-      _permanentMinSquatsXAngle = _minSquatsXAngle;
+    if (_topSquatsYAngle < _permanenttopSquatsYAngle) {
+      _permanenttopSquatsYAngle = _topSquatsYAngle;
     }
     // Save the min value to the Firebase RTDB
-    final userUid = FirebaseAuth.instance.currentUser?.uid;
-    final angleDataRef = _databaseRef.child('users/$userUid/angle_data');
+    final DatabaseReference angleDataRef =
+        _databaseRef.child('users/$userUid/angle_data');
     final snapshot = await angleDataRef.once();
     if (snapshot.snapshot.value == null) {
       // There is no data at this location, so use .set() to create the data
       await angleDataRef.set({
-        'minSquatsXAngle': _permanentMinSquatsXAngle,
+        'topSquatsYAngle': _permanenttopSquatsYAngle,
       });
     } else {
       // Data already exists, so use .update() to update the existing data
       await angleDataRef.update({
-        'minSquatsXAngle': _permanentMinSquatsXAngle,
+        'topSquatsYAngle': _permanenttopSquatsYAngle,
       });
     }
-    if (_permanentMinSquatsXAngle != 0.0 &&
-        _permanentMinSquatsXAngle != double.infinity) {
+    if (_permanenttopSquatsYAngle != 0.0 &&
+        _permanenttopSquatsYAngle != double.infinity) {
       if (mounted) {
         showDialog(
           barrierDismissible: false,
           context: context,
           builder: (context) => AlertDialog(
             title: Text('Calibration Successful'),
-            content: Text('Minimum calibration value saved.'),
+            content: Text('Initial Angle Calibrated.'),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.pop(context); // first pop
                   Navigator.pop(context); // second pop
-                  _isMinSquatsCalibrated = true;
+                  _istopSquatsCalibrated = true;
                 },
                 child: Text('OK'),
               ),
@@ -298,15 +320,15 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
     }
   }
 
-  Future<void> _startMaxCalibrationAsync() async {
+  Future<void> _startbottomSquatsCalibrationAsync() async {
     // Reset the min value before starting calibration
     if (mounted) {
       setState(() {
-        _maxSquatsXAngle = 0.0;
-        _permanentMaxSquatsXAngle = 0.0;
+        _bottomSquatsYAngle = 0.0;
+        _permanentbottomSquatsYAngle = 0.0;
       });
     }
-    _isMaxSquatsCalibrated = false;
+    _isbottomSquatsCalibrated = false;
 
     // Display a dialog to indicate that calibration is in progress
     showDialog(
@@ -320,10 +342,10 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
     // Wait for 5 seconds to collect samples
     await Future.delayed(Duration(seconds: 5));
 
-    if (_maxSquatsXAngle > _permanentMaxSquatsXAngle) {
-      _permanentMaxSquatsXAngle = _maxSquatsXAngle;
+    if (_bottomSquatsYAngle > _permanentbottomSquatsYAngle) {
+      _permanentbottomSquatsYAngle = _bottomSquatsYAngle;
     }
-    print(_permanentMaxSquatsXAngle);
+    print(_permanentbottomSquatsYAngle);
     // Save the min value to the Firebase RTDB
     final userUid = FirebaseAuth.instance.currentUser?.uid;
     final angleDataRef = _databaseRef.child('users/$userUid/angle_data');
@@ -331,16 +353,16 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
     if (snapshot.snapshot.value == null) {
       // There is no data at this location, so use .set() to create the data
       await angleDataRef.set({
-        'maxSquatsXAngle': _permanentMaxSquatsXAngle,
+        'bottomSquatsYAngle': _permanentbottomSquatsYAngle,
       });
     } else {
       // Data already exists, so use .update() to update the existing data
       await angleDataRef.update({
-        'maxSquatsXAngle': _permanentMaxSquatsXAngle,
+        'bottomSquatsYAngle': _permanentbottomSquatsYAngle,
       });
     }
-    if (_permanentMaxSquatsXAngle != 0.0 &&
-        _permanentMaxSquatsXAngle != double.infinity) {
+    if (_permanentbottomSquatsYAngle != 0.0 &&
+        _permanentbottomSquatsYAngle != double.infinity) {
       if (mounted) {
         showDialog(
           barrierDismissible: false,
@@ -353,7 +375,7 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
                 onPressed: () {
                   Navigator.pop(context); // first pop
                   Navigator.pop(context); // second pop
-                  _isMaxSquatsCalibrated = true;
+                  _isbottomSquatsCalibrated = true;
                 },
                 child: Text('OK'),
               ),

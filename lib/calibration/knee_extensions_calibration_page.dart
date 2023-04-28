@@ -15,10 +15,12 @@ class KneeExtensionsCalibration extends StatefulWidget {
 
 class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
   // Define variables to store the min and max values
-  double _minKneeExtensionsXAngle = 0.0;
-  double _maxKneeExtensionsXAngle = 0.0;
-  bool _isMinExtensionsCalibrating = false;
-  bool _isMaxExtensionsCalibrating = false;
+  double _minKneeExtensionsyAngle = 0.0;
+  double _maxKneeExtensionsyAngle = 0.0;
+
+  double _permanentMinKneeExtensionsyAngle = double.infinity;
+  double _permanentMaxKneeExtensionsyAngle = 0.0;
+
   bool _isMinExtensionsCalibrated = false;
   bool _isMaxExtensionsCalibrated = false;
   // Create a reference to the Firebase RTDB
@@ -27,22 +29,21 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
   @override
   void initState() {
     super.initState();
-
-    // Listen to changes in the xAngle value in the sensor_data node
     _databaseRef.child('sensor_data').onChildChanged.listen((event) {
-      if (event.snapshot.key == 'xAngle') {
-        double xAngle = double.parse(event.snapshot.value.toString());
-        // Update the min and max values based on the xAngle value
-        setState(() {
-          if (_minKneeExtensionsXAngle == 0.0 ||
-              xAngle < _minKneeExtensionsXAngle) {
-            _minKneeExtensionsXAngle = xAngle;
-          }
-          if (_maxKneeExtensionsXAngle == 0.0 ||
-              xAngle > _maxKneeExtensionsXAngle) {
-            _maxKneeExtensionsXAngle = xAngle;
-          }
-        });
+      if (event.snapshot.key == 'yAngle') {
+        double yAngle = double.parse(event.snapshot.value.toString());
+        if (mounted) {
+          setState(() {
+            if (_minKneeExtensionsyAngle == 0.0 ||
+                yAngle < _minKneeExtensionsyAngle) {
+              _minKneeExtensionsyAngle = yAngle;
+            }
+            if (_maxKneeExtensionsyAngle == 0.0 ||
+                yAngle > _maxKneeExtensionsyAngle) {
+              _maxKneeExtensionsyAngle = yAngle;
+            }
+          });
+        }
       }
     });
   }
@@ -69,22 +70,30 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
                   ),
                   SizedBox(width: 10),
                   Text(
-                    'Squats Calibration',
+                    'Knee Extensions Calibration',
                     style: GoogleFonts.raleway(
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
               SizedBox(height: 10),
-              Text(
-                '''Before we start the exercise, we need to calibrate the range that you are capable of doing as of now.\n\nFirst, stand in the starting position of the squat and then press the minimum calibration button. Stand until it says calibration finished.\n\nThen, perform the squat as low as you can and press the maximum calibration button. Wait until calibration is finished.''',
-                style: GoogleFonts.raleway(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                textAlign: TextAlign.center,
+                child: Text(
+                  '''Let's calibrate the range of your knee extensions!\n\n• For Initial Calibration: Stand in the starting position of the knee extension. \n\n • For Final Calibration: Stand in the final position of the knee extension. \n\n • When both calibrations have finished, press 'Ready to Start' to begin the exercise!''',
+                  style: GoogleFonts.raleway(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.lightGreen[800],
+                  ),
+                  textAlign: TextAlign.left,
+                ),
               ),
               SizedBox(height: 20),
               // Create buttons to start min and max calibration
@@ -93,13 +102,7 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
                 children: [
                   ElevatedButton(
                     onPressed: () async {
-                      setState(() {
-                        _isMinExtensionsCalibrating = true;
-                      });
-                      await _startMinCalibrationAsync();
-                      setState(() {
-                        _isMinExtensionsCalibrating = false;
-                      });
+                      await _startMinKneeExtensionsCalibrationAsync();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.lightGreen,
@@ -110,7 +113,7 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
                           EdgeInsets.symmetric(horizontal: 40, vertical: 20),
                     ),
                     child: Text(
-                      'Start Min. Calibration',
+                      'Calibrate Initial Position',
                       style: GoogleFonts.raleway(
                           fontSize: 24, fontWeight: FontWeight.bold),
                     ),
@@ -118,13 +121,7 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
                   SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: () async {
-                      setState(() {
-                        _isMaxExtensionsCalibrating = true;
-                      });
-                      await _startMaxCalibrationAsync();
-                      setState(() {
-                        _isMaxExtensionsCalibrating = false;
-                      });
+                      await _startMaxKneeExtensionsCalibrationAsync();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.lightGreen,
@@ -135,40 +132,85 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
                           EdgeInsets.symmetric(horizontal: 40, vertical: 20),
                     ),
                     child: Text(
-                      'Start Max. Calibration',
+                      'Calibrate Final Position',
                       style: GoogleFonts.raleway(
                           fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                   ),
-                ],
-              ),
-              // Display the current min and max values
-              if (_isMinExtensionsCalibrated) ...[
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Min X: ${_minKneeExtensionsXAngle.toString()}',
-                        style: GoogleFonts.raleway(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  SizedBox(height: 10),
+                  Visibility(
+                    visible: _isMinExtensionsCalibrated ||
+                        _isMaxExtensionsCalibrated, // show only when either min or max is visible
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.lightGreen[
+                            400], // light green color with 40% opacity
+                        borderRadius: BorderRadius.circular(
+                            10), // set border radius to 10
                       ),
-                      SizedBox(height: 10),
-                      if (_isMaxExtensionsCalibrated) ...[
-                        Text(
-                          'Max X: ${_maxKneeExtensionsXAngle.toString()}',
+                      padding: EdgeInsets.all(
+                          10), // add 10 pixels of padding to all sides
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_isMinExtensionsCalibrated)
+                            Text(
+                              'Initial Angle: ${_permanentMinKneeExtensionsyAngle.toStringAsFixed(2)}\u00B0',
+                              style: GoogleFonts.raleway(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          SizedBox(height: 10),
+                          if (_isMaxExtensionsCalibrated)
+                            Text(
+                              'Final Angle: ${_permanentMaxKneeExtensionsyAngle.toStringAsFixed(2)}\u00B0',
+                              style: GoogleFonts.raleway(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  AnimatedOpacity(
+                    opacity:
+                        _isMinExtensionsCalibrated && _isMaxExtensionsCalibrated
+                            ? 1.0
+                            : 0.0,
+                    duration: Duration(milliseconds: 500),
+                    curve: Curves.easeInOut,
+                    child: Visibility(
+                      visible: _isMinExtensionsCalibrated &&
+                          _isMaxExtensionsCalibrated,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // TODO: Add functionality for ready button
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.lightGreen,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 40, vertical: 20),
+                        ),
+                        child: Text(
+                          'Ready to Start ?',
                           style: GoogleFonts.raleway(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+                      ),
+                    ),
+                  )
+                ],
+              ),
             ],
           ),
         ),
@@ -176,135 +218,178 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
     );
   }
 
-  Future<void> _startMinCalibrationAsync() async {
+  Future<void> _startMinKneeExtensionsCalibrationAsync() async {
     // Reset the min value before starting calibration
-    setState(() {
-      _minKneeExtensionsXAngle = 0.0;
-    });
-
+    if (mounted) {
+      setState(() {
+        _minKneeExtensionsyAngle = 0.0;
+        _permanentMinKneeExtensionsyAngle = double.infinity;
+      });
+    }
+    _isMinExtensionsCalibrated = false;
     // Display a dialog to indicate that calibration is in progress
     showDialog(
+      barrierDismissible: false, // set barrierDismissible to false
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Calibrating...'),
-        content: Text('Please stand in the starting position of the squat.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-        ],
+        content: Text(
+            'Please stand in the starting position of the knee extension.'),
       ),
     );
 
     // Wait for 5 seconds to collect samples
     await Future.delayed(Duration(seconds: 5));
 
-    try {
-      // Save the min value to the Firebase RTDB
-      final userUid = FirebaseAuth.instance.currentUser?.uid;
-      await _databaseRef
-          .child('users/$userUid')
-          .child('angle_data')
-          .update({'minKneeExtensionsXAngle': _minKneeExtensionsXAngle});
-      // Set _iscalibrated to true if both min and max values have been saved
-      if (_maxKneeExtensionsXAngle != 0.0) {
-        setState(() {
-          _isMinExtensionsCalibrated = true;
-        });
+    if (_minKneeExtensionsyAngle < _permanentMinKneeExtensionsyAngle) {
+      _permanentMinKneeExtensionsyAngle = _minKneeExtensionsyAngle;
+    }
+    // Save the min value to the Firebase RTDB
+    final userUid = FirebaseAuth.instance.currentUser?.uid;
+    final angleDataRef = _databaseRef.child('users/$userUid/angle_data');
+    final snapshot = await angleDataRef.once();
+    if (snapshot.snapshot.value == null) {
+      // There is no data at this location, so use .set() to create the data
+      await angleDataRef.set({
+        'minKneeExtensionsyAngle': _permanentMinKneeExtensionsyAngle,
+      });
+    } else {
+      // Data already exists, so use .update() to update the existing data
+      await angleDataRef.update({
+        'minKneeExtensionsyAngle': _permanentMinKneeExtensionsyAngle,
+      });
+    }
+    if (_permanentMinKneeExtensionsyAngle != 0.0 &&
+        _permanentMinKneeExtensionsyAngle != double.infinity) {
+      if (mounted) {
+        showDialog(
+          barrierDismissible: false,
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Calibration Successful'),
+            content: Text('Minimum calibration value saved.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // first pop
+                  Navigator.pop(context); // second pop
+                  _isMinExtensionsCalibrated = true;
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
-      // Display a success dialog
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Calibration Successful'),
-          content: Text('Minimum calibration value saved.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // first pop
-                Navigator.pop(context); // second pop
-              },
-              child: Text('OK'),
-            ),
-          ],
-        ),
-      );
-    } catch (error) {
-      // Handle the error by showing an error dialog or printing to console
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Error'),
-          content: Text('Failed to save minimumX value: $error'),
-        ),
-      );
+    } else {
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false, // set barrierDismissible to true
+          builder: (context) => AlertDialog(
+            title: Text('Calibration Error'),
+            content:
+                Text('Please ensure that the sensor is calibrated correctly.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // first pop
+                  Navigator.pop(context);
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     }
   }
 
-  Future<void> _startMaxCalibrationAsync() async {
-    // Reset the max value before starting calibration
-    setState(() {
-      _maxKneeExtensionsXAngle = 0.0;
-    });
+  Future<void> _startMaxKneeExtensionsCalibrationAsync() async {
+    // Reset the min value before starting calibration
+    if (mounted) {
+      setState(() {
+        _maxKneeExtensionsyAngle = 0.0;
+        _permanentMaxKneeExtensionsyAngle = 0.0;
+      });
+    }
+    _isMaxExtensionsCalibrated = false;
 
     // Display a dialog to indicate that calibration is in progress
     showDialog(
+      barrierDismissible: false, // set barrierDismissible to false
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Calibrating...'),
-        content: Text('Please stand in the final position of the squat.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-        ],
+        content:
+            Text('Please stand in the final position of the knee extension.'),
       ),
     );
-
     // Wait for 5 seconds to collect samples
     await Future.delayed(Duration(seconds: 5));
 
-    try {
-      // Save the max value to the Firebase RTDB
-      final userUid = FirebaseAuth.instance.currentUser?.uid;
-      await _databaseRef
-          .child('users/$userUid')
-          .child('angle_data')
-          .update({'maxKneeExtensionsXAngle': _maxKneeExtensionsXAngle});
-      // Set _iscalibrated to true if both min and max values have been saved
-      if (_minKneeExtensionsXAngle != 0.0) {
-        setState(() {
-          _isMaxExtensionsCalibrated = true;
-        });
+    if (_maxKneeExtensionsyAngle > _permanentMaxKneeExtensionsyAngle) {
+      _permanentMaxKneeExtensionsyAngle = _maxKneeExtensionsyAngle;
+    }
+    print(_permanentMaxKneeExtensionsyAngle);
+    // Save the min value to the Firebase RTDB
+    final userUid = FirebaseAuth.instance.currentUser?.uid;
+    final angleDataRef = _databaseRef.child('users/$userUid/angle_data');
+    final snapshot = await angleDataRef.once();
+    if (snapshot.snapshot.value == null) {
+      // There is no data at this location, so use .set() to create the data
+      await angleDataRef.set({
+        'maxKneeExtensionsyAngle': _permanentMaxKneeExtensionsyAngle,
+      });
+    } else {
+      // Data already exists, so use .update() to update the existing data
+      await angleDataRef.update({
+        'maxKneeExtensionsyAngle': _permanentMaxKneeExtensionsyAngle,
+      });
+    }
+    if (_permanentMaxKneeExtensionsyAngle != 0.0 &&
+        _permanentMaxKneeExtensionsyAngle != double.infinity) {
+      if (mounted) {
+        showDialog(
+          barrierDismissible: false,
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Calibration Successful'),
+            content: Text('Maximum calibration value saved.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // first pop
+                  Navigator.pop(context); // second pop
+                  _isMaxExtensionsCalibrated = true;
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
-      // Display a success dialog
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Calibration Successful'),
-          content: Text('Maximum calibration value saved.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // pop once
-                Navigator.pop(context); // pop twice
-              },
-              child: Text('OK'),
-            ),
-          ],
-        ),
-      );
-    } catch (error) {
-      // Handle the error by showing an error dialog or printing to console
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Error'),
-          content: Text('Failed to save maximumX value: $error'),
-        ),
-      );
+    } else {
+      if (mounted) {
+        showDialog(
+          barrierDismissible: false,
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Calibration Error'),
+            content:
+                Text('Please ensure that the sensor is calibrated correctly.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // first pop
+                  Navigator.pop(context);
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     }
   }
 }

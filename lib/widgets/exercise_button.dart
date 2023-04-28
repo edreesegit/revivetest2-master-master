@@ -64,7 +64,7 @@ class _ExerciseButtonState extends State<ExerciseButton> {
               child: Container(
                 alignment: Alignment.center,
                 child: Text(
-                  'Begin ${widget.exerciseName}',
+                  'Begin ${widget.exerciseName} Calibration',
                   style: GoogleFonts.raleway(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

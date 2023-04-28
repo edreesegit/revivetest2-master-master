@@ -14,32 +14,33 @@ class HeelSlidesCalibration extends StatefulWidget {
 
 class _HeelSlidesCalibrationState extends State<HeelSlidesCalibration> {
   // Define variables to store the min and max values
-  double _minHeelSlidesXAngle = 0.0;
-  double _maxHeelSlidesXAngle = 0.0;
-  bool _isMinSlidesCalibrating = false;
-  bool _isMaxSlidesCalibrating = false;
-  bool _isMinSlidesCalibrated = false;
-  bool _isMaxSlidesCalibrated = false;
+  double _minHeelSlidesyAngle = 0.0;
+  double _maxHeelSlidesyAngle = 0.0;
+
+  double _permanentMinHeelSlidesyAngle = double.infinity;
+  double _permanentMaxHeelSlidesyAngle = 0.0;
+
+  bool _isMinExtensionsCalibrated = false;
+  bool _isMaxExtensionsCalibrated = false;
   // Create a reference to the Firebase RTDB
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref();
 
   @override
   void initState() {
     super.initState();
-
-    // Listen to changes in the xAngle value in the sensor_data node
     _databaseRef.child('sensor_data').onChildChanged.listen((event) {
-      if (event.snapshot.key == 'xAngle') {
-        double xAngle = double.parse(event.snapshot.value.toString());
-        // Update the min and max values based on the xAngle value
-        setState(() {
-          if (_minHeelSlidesXAngle == 0.0 || xAngle < _minHeelSlidesXAngle) {
-            _minHeelSlidesXAngle = xAngle;
-          }
-          if (_maxHeelSlidesXAngle == 0.0 || xAngle > _maxHeelSlidesXAngle) {
-            _maxHeelSlidesXAngle = xAngle;
-          }
-        });
+      if (event.snapshot.key == 'yAngle') {
+        double yAngle = double.parse(event.snapshot.value.toString());
+        if (mounted) {
+          setState(() {
+            if (_minHeelSlidesyAngle == 0.0 || yAngle < _minHeelSlidesyAngle) {
+              _minHeelSlidesyAngle = yAngle;
+            }
+            if (_maxHeelSlidesyAngle == 0.0 || yAngle > _maxHeelSlidesyAngle) {
+              _maxHeelSlidesyAngle = yAngle;
+            }
+          });
+        }
       }
     });
   }
@@ -68,20 +69,28 @@ class _HeelSlidesCalibrationState extends State<HeelSlidesCalibration> {
                   Text(
                     'Heel Slides Calibration',
                     style: GoogleFonts.raleway(
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
               SizedBox(height: 10),
-              Text(
-                '''Before we start the exercise, we need to calibrate the range that you are capable of doing as of now.\n\nFirst, stand in the starting position of the squat and then press the minimum calibration button. Stand until it says calibration finished.\n\nThen, perform the squat as low as you can and press the maximum calibration button. Wait until calibration is finished.''',
-                style: GoogleFonts.raleway(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                textAlign: TextAlign.center,
+                child: Text(
+                  '''Let's calibrate the range of your heel slides!\n\n• For Initial Calibration: Stand in the starting position of the heel slides. \n\n • For Final Calibration: Stand in the final position of the heel slides. \n\n • When both calibrations have finished, press 'Ready to Start' to begin the exercise!''',
+                  style: GoogleFonts.raleway(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.lightGreen[800],
+                  ),
+                  textAlign: TextAlign.left,
+                ),
               ),
               SizedBox(height: 20),
               // Create buttons to start min and max calibration
@@ -90,13 +99,7 @@ class _HeelSlidesCalibrationState extends State<HeelSlidesCalibration> {
                 children: [
                   ElevatedButton(
                     onPressed: () async {
-                      setState(() {
-                        _isMinSlidesCalibrating = true;
-                      });
-                      await _startMinCalibrationAsync();
-                      setState(() {
-                        _isMinSlidesCalibrating = false;
-                      });
+                      await _startMinHeelSlidesCalibrationAsync();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.lightGreen,
@@ -107,7 +110,7 @@ class _HeelSlidesCalibrationState extends State<HeelSlidesCalibration> {
                           EdgeInsets.symmetric(horizontal: 40, vertical: 20),
                     ),
                     child: Text(
-                      'Start Min. Calibration',
+                      'Calibrate Initial Position',
                       style: GoogleFonts.raleway(
                           fontSize: 24, fontWeight: FontWeight.bold),
                     ),
@@ -115,13 +118,7 @@ class _HeelSlidesCalibrationState extends State<HeelSlidesCalibration> {
                   SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: () async {
-                      setState(() {
-                        _isMaxSlidesCalibrating = true;
-                      });
-                      await _startMaxCalibrationAsync();
-                      setState(() {
-                        _isMaxSlidesCalibrating = false;
-                      });
+                      await _startMaxHeelSlidesCalibrationAsync();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.lightGreen,
@@ -132,40 +129,85 @@ class _HeelSlidesCalibrationState extends State<HeelSlidesCalibration> {
                           EdgeInsets.symmetric(horizontal: 40, vertical: 20),
                     ),
                     child: Text(
-                      'Start Max. Calibration',
+                      'Calibrate Final Position',
                       style: GoogleFonts.raleway(
                           fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                   ),
-                ],
-              ),
-              // Display the current min and max values
-              if (_isMinSlidesCalibrated) ...[
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Min X: ${_minHeelSlidesXAngle.toString()}',
-                        style: GoogleFonts.raleway(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  SizedBox(height: 10),
+                  Visibility(
+                    visible: _isMinExtensionsCalibrated ||
+                        _isMaxExtensionsCalibrated, // show only when either min or max is visible
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.lightGreen[
+                            400], // light green color with 40% opacity
+                        borderRadius: BorderRadius.circular(
+                            10), // set border radius to 10
                       ),
-                      SizedBox(height: 10),
-                      if (_isMaxSlidesCalibrated) ...[
-                        Text(
-                          'Max X: ${_maxHeelSlidesXAngle.toString()}',
+                      padding: EdgeInsets.all(
+                          10), // add 10 pixels of padding to all sides
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_isMinExtensionsCalibrated)
+                            Text(
+                              'Initial Angle: ${_permanentMinHeelSlidesyAngle.toStringAsFixed(2)}\u00B0',
+                              style: GoogleFonts.raleway(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          SizedBox(height: 10),
+                          if (_isMaxExtensionsCalibrated)
+                            Text(
+                              'Final Angle: ${_permanentMaxHeelSlidesyAngle.toStringAsFixed(2)}\u00B0',
+                              style: GoogleFonts.raleway(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  AnimatedOpacity(
+                    opacity:
+                        _isMinExtensionsCalibrated && _isMaxExtensionsCalibrated
+                            ? 1.0
+                            : 0.0,
+                    duration: Duration(milliseconds: 500),
+                    curve: Curves.easeInOut,
+                    child: Visibility(
+                      visible: _isMinExtensionsCalibrated &&
+                          _isMaxExtensionsCalibrated,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // TODO: Add functionality for ready button
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.lightGreen,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 40, vertical: 20),
+                        ),
+                        child: Text(
+                          'Ready to Start ?',
                           style: GoogleFonts.raleway(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+                      ),
+                    ),
+                  )
+                ],
+              ),
             ],
           ),
         ),
@@ -173,136 +215,177 @@ class _HeelSlidesCalibrationState extends State<HeelSlidesCalibration> {
     );
   }
 
-  Future<void> _startMinCalibrationAsync() async {
+  Future<void> _startMinHeelSlidesCalibrationAsync() async {
     // Reset the min value before starting calibration
-    setState(() {
-      _minHeelSlidesXAngle = 0.0;
-    });
-
+    if (mounted) {
+      setState(() {
+        _minHeelSlidesyAngle = 0.0;
+        _permanentMinHeelSlidesyAngle = double.infinity;
+      });
+    }
+    _isMinExtensionsCalibrated = false;
     // Display a dialog to indicate that calibration is in progress
     showDialog(
+      barrierDismissible: false, // set barrierDismissible to false
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Calibrating...'),
-        content: Text('Please stand in the starting position of the squat.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-        ],
+        content:
+            Text('Please stand in the starting position of the heel slides.'),
       ),
     );
 
     // Wait for 5 seconds to collect samples
     await Future.delayed(Duration(seconds: 5));
 
-    try {
-      // Save the min value to the Firebase RTDB
-      final userUid = FirebaseAuth.instance.currentUser?.uid;
-      await _databaseRef
-          .child('users/$userUid')
-          .child('angle_data')
-          .update({'minimumHeelSlidesXAngle': _minHeelSlidesXAngle});
-      // Set _iscalibrated to true if both min and max values have been saved
-      if (_maxHeelSlidesXAngle != 0.0) {
-        setState(() {
-          _isMinSlidesCalibrated = true;
-        });
+    if (_minHeelSlidesyAngle < _permanentMinHeelSlidesyAngle) {
+      _permanentMinHeelSlidesyAngle = _minHeelSlidesyAngle;
+    }
+    // Save the min value to the Firebase RTDB
+    final userUid = FirebaseAuth.instance.currentUser?.uid;
+    final angleDataRef = _databaseRef.child('users/$userUid/angle_data');
+    final snapshot = await angleDataRef.once();
+    if (snapshot.snapshot.value == null) {
+      // There is no data at this location, so use .set() to create the data
+      await angleDataRef.set({
+        'minHeelSlidesyAngle': _permanentMinHeelSlidesyAngle,
+      });
+    } else {
+      // Data already exists, so use .update() to update the existing data
+      await angleDataRef.update({
+        'minHeelSlidesyAngle': _permanentMinHeelSlidesyAngle,
+      });
+    }
+    if (_permanentMinHeelSlidesyAngle != 0.0 &&
+        _permanentMinHeelSlidesyAngle != double.infinity) {
+      if (mounted) {
+        showDialog(
+          barrierDismissible: false,
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Calibration Successful'),
+            content: Text('Minimum calibration value saved.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // first pop
+                  Navigator.pop(context); // second pop
+                  _isMinExtensionsCalibrated = true;
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
-      // Display a success dialog
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Calibration Successful'),
-          content: Text('Minimum calibration value saved.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // first pop
-                Navigator.pop(context); // second pop
-              },
-              child: Text('OK'),
-            ),
-          ],
-        ),
-      );
-    } catch (error) {
-      // Handle the error by showing an error dialog or printing to console
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Error'),
-          content: Text('Failed to save minimumX value: $error'),
-        ),
-      );
+    } else {
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false, // set barrierDismissible to true
+          builder: (context) => AlertDialog(
+            title: Text('Calibration Error'),
+            content:
+                Text('Please ensure that the sensor is calibrated correctly.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // first pop
+                  Navigator.pop(context);
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     }
   }
 
-  Future<void> _startMaxCalibrationAsync() async {
-    // Reset the max value before starting calibration
-    setState(() {
-      _maxHeelSlidesXAngle = 0.0;
-    });
+  Future<void> _startMaxHeelSlidesCalibrationAsync() async {
+    // Reset the min value before starting calibration
+    if (mounted) {
+      setState(() {
+        _maxHeelSlidesyAngle = 0.0;
+        _permanentMaxHeelSlidesyAngle = 0.0;
+      });
+    }
+    _isMaxExtensionsCalibrated = false;
 
     // Display a dialog to indicate that calibration is in progress
     showDialog(
+      barrierDismissible: false, // set barrierDismissible to false
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Calibrating...'),
-        content: Text('Please stand in the final position of the squat.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-        ],
+        content: Text('Please stand in the final position of the heel slides.'),
       ),
     );
-
     // Wait for 5 seconds to collect samples
     await Future.delayed(Duration(seconds: 5));
 
-    try {
-      // Save the max value to the Firebase RTDB
-      final userUid = FirebaseAuth.instance.currentUser?.uid;
-      await _databaseRef
-          .child('users/$userUid')
-          .child('angle_data')
-          .child('heel_slides')
-          .update({'maximumHeelSlidesXAngle': _maxHeelSlidesXAngle});
-      // Set _iscalibrated to true if both min and max values have been saved
-      if (_minHeelSlidesXAngle != 0.0) {
-        setState(() {
-          _isMaxSlidesCalibrated = true;
-        });
+    if (_maxHeelSlidesyAngle > _permanentMaxHeelSlidesyAngle) {
+      _permanentMaxHeelSlidesyAngle = _maxHeelSlidesyAngle;
+    }
+    print(_permanentMaxHeelSlidesyAngle);
+    // Save the min value to the Firebase RTDB
+    final userUid = FirebaseAuth.instance.currentUser?.uid;
+    final angleDataRef = _databaseRef.child('users/$userUid/angle_data');
+    final snapshot = await angleDataRef.once();
+    if (snapshot.snapshot.value == null) {
+      // There is no data at this location, so use .set() to create the data
+      await angleDataRef.set({
+        'maxHeelSlidesyAngle': _permanentMaxHeelSlidesyAngle,
+      });
+    } else {
+      // Data already exists, so use .update() to update the existing data
+      await angleDataRef.update({
+        'maxHeelSlidesyAngle': _permanentMaxHeelSlidesyAngle,
+      });
+    }
+    if (_permanentMaxHeelSlidesyAngle != 0.0 &&
+        _permanentMaxHeelSlidesyAngle != double.infinity) {
+      if (mounted) {
+        showDialog(
+          barrierDismissible: false,
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Calibration Successful'),
+            content: Text('Maximum calibration value saved.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // first pop
+                  Navigator.pop(context); // second pop
+                  _isMaxExtensionsCalibrated = true;
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
-      // Display a success dialog
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Calibration Successful'),
-          content: Text('Maximum calibration value saved.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // pop once
-                Navigator.pop(context); // pop twice
-              },
-              child: Text('OK'),
-            ),
-          ],
-        ),
-      );
-    } catch (error) {
-      // Handle the error by showing an error dialog or printing to console
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Error'),
-          content: Text('Failed to save maximumX value: $error'),
-        ),
-      );
+    } else {
+      if (mounted) {
+        showDialog(
+          barrierDismissible: false,
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Calibration Error'),
+            content:
+                Text('Please ensure that the sensor is calibrated correctly.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // first pop
+                  Navigator.pop(context);
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     }
   }
 }
