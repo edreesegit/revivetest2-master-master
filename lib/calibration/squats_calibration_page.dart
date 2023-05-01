@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables, use_build_context_synchronously, unused_field
 
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -193,7 +195,7 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
                                   .ref()
                                   .child('users/$userUid/angle_data');
                           angleDataRef.update({
-                            'squatBool': true,
+                            'squatsBool': true,
                           });
                           Navigator.push(
                             context,
@@ -232,8 +234,8 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
     final userUid = FirebaseAuth.instance.currentUser?.uid;
     final DatabaseReference boolRef =
         FirebaseDatabase.instance.ref().child('users/$userUid/angle_data');
-    boolRef.set({
-      'squatBool': false,
+    boolRef.update({
+      'squatsBool': false,
     });
     // Reset the min value before starting calibration
     if (mounted) {
@@ -245,14 +247,37 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
     _istopSquatsCalibrated = false;
     // Display a dialog to indicate that calibration is in progress
     showDialog(
-      barrierDismissible: false, // set barrierDismissible to false
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Calibrating...'),
-        content: Text('Please stand in the starting position of the squat.'),
-      ),
-    );
-
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Padding(
+            padding: EdgeInsets.all(20),
+            child: Center(
+              child: Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.grey[200],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(
+                      child: Text(
+                        'Calibrating...',
+                        style: GoogleFonts.raleway(
+                          decoration: TextDecoration.none,
+                          color: Colors.lightGreen[800],
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
     // Wait for 5 seconds to collect samples
     await Future.delayed(Duration(seconds: 5));
 
@@ -278,43 +303,136 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
         _permanenttopSquatsYAngle != double.infinity) {
       if (mounted) {
         showDialog(
-          barrierDismissible: false,
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Calibration Successful'),
-            content: Text('Initial Angle Calibrated.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // first pop
-                  Navigator.pop(context); // second pop
-                  _istopSquatsCalibrated = true;
-                },
-                child: Text('OK'),
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.grey[200],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Center(
+                        child: Text(
+                          'Calibration Successful',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Center(
+                        child: Text(
+                          'Initial position has been calibrated. \nPress OK to continue...',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pop();
+                          _istopSquatsCalibrated = true;
+                        },
+                        child: Text(
+                          'OK',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ],
-          ),
+            );
+          },
         );
       }
     } else {
       if (mounted) {
         showDialog(
           context: context,
-          barrierDismissible: false, // set barrierDismissible to true
-          builder: (context) => AlertDialog(
-            title: Text('Calibration Error'),
-            content:
-                Text('Please ensure that the sensor is calibrated correctly.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // first pop
-                  Navigator.pop(context);
-                },
-                child: Text('OK'),
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.grey[200],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Center(
+                        child: Text(
+                          'Calibration Error',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Center(
+                        child: Text(
+                          'Initial position has not been calibrated, please try again. \nPress OK to continue...',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pop();
+                        },
+                        child: Text(
+                          'OK',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ],
-          ),
+            );
+          },
         );
       }
     }
@@ -332,20 +450,44 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
 
     // Display a dialog to indicate that calibration is in progress
     showDialog(
-      barrierDismissible: false, // set barrierDismissible to false
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Calibrating...'),
-        content: Text('Please stand in the final position of the squat.'),
-      ),
-    );
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Padding(
+            padding: EdgeInsets.all(20),
+            child: Center(
+              child: Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.grey[200],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(
+                      child: Text(
+                        'Calibrating...',
+                        style: GoogleFonts.raleway(
+                          decoration: TextDecoration.none,
+                          color: Colors.lightGreen[800],
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
     // Wait for 5 seconds to collect samples
     await Future.delayed(Duration(seconds: 5));
 
     if (_bottomSquatsYAngle > _permanentbottomSquatsYAngle) {
       _permanentbottomSquatsYAngle = _bottomSquatsYAngle;
     }
-    print(_permanentbottomSquatsYAngle);
+
     // Save the min value to the Firebase RTDB
     final userUid = FirebaseAuth.instance.currentUser?.uid;
     final angleDataRef = _databaseRef.child('users/$userUid/angle_data');
@@ -365,43 +507,136 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
         _permanentbottomSquatsYAngle != double.infinity) {
       if (mounted) {
         showDialog(
-          barrierDismissible: false,
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Calibration Successful'),
-            content: Text('Maximum calibration value saved.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // first pop
-                  Navigator.pop(context); // second pop
-                  _isbottomSquatsCalibrated = true;
-                },
-                child: Text('OK'),
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.grey[200],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Center(
+                        child: Text(
+                          'Calibration Successful',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Center(
+                        child: Text(
+                          'Final position has been calibrated. \nPress OK to continue...',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pop();
+                          _isbottomSquatsCalibrated = true;
+                        },
+                        child: Text(
+                          'OK',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ],
-          ),
+            );
+          },
         );
       }
     } else {
       if (mounted) {
         showDialog(
-          barrierDismissible: false,
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Calibration Error'),
-            content:
-                Text('Please ensure that the sensor is calibrated correctly.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // first pop
-                  Navigator.pop(context);
-                },
-                child: Text('OK'),
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.grey[200],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Center(
+                        child: Text(
+                          'Calibration Error',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Center(
+                        child: Text(
+                          'Final position has not been calibrated, please try again. \nPress OK to continue...',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pop();
+                        },
+                        child: Text(
+                          'OK',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ],
-          ),
+            );
+          },
         );
       }
     }

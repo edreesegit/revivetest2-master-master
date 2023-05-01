@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:revivetest2/home/graph.dart';
 import 'package:revivetest2/home/home.dart';
-import 'package:revivetest2/home/sensor.dart';
 import 'package:revivetest2/home/settings.dart';
 
 class HomeNavigator extends StatefulWidget {
@@ -23,7 +22,6 @@ class _HomeNavigatorState extends State<HomeNavigator> {
     super.initState();
     _pages = [
       UserHome(),
-      UserSensor(),
       UserGraph(),
       UserSettings(),
     ];
@@ -54,10 +52,6 @@ class _HomeNavigatorState extends State<HomeNavigator> {
             GButton(
               icon: Icons.home,
               text: 'Home',
-            ),
-            GButton(
-              icon: Icons.sensors_rounded,
-              text: 'Sensors',
             ),
             GButton(
               icon: Icons.monitor_heart_rounded,

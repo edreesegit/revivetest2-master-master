@@ -1,38 +1,33 @@
-// ignore_for_file: prefer_const_constructors, library_private_types_in_public_api, avoid_print, use_build_context_synchronously
+// ignore_for_file: prefer_const_constructors, avoid_print
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:revivetest2/home/graph.dart';
-import 'package:revivetest2/home/home.dart';
 import 'package:revivetest2/intro/get_angle_info.dart';
 import 'package:revivetest2/intro/get_current_angle_info.dart';
-import 'package:revivetest2/intro/home_navigator.dart';
 
-class SquatsCounter extends StatefulWidget {
-  const SquatsCounter({Key? key}) : super(key: key);
+class HeelSlidesCounter extends StatefulWidget {
+  const HeelSlidesCounter({super.key});
 
   @override
-  _SquatsCounterState createState() => _SquatsCounterState();
+  State<HeelSlidesCounter> createState() => _HeelSlidesCounterState();
 }
 
-class _SquatsCounterState extends State<SquatsCounter> {
+class _HeelSlidesCounterState extends State<HeelSlidesCounter> {
   @override
   void initState() {
     super.initState();
     final userUid = FirebaseAuth.instance.currentUser?.uid;
-
     final DatabaseReference angleDataRef =
         FirebaseDatabase.instance.ref().child('users/$userUid/angle_data');
-
     angleDataRef.update({
-      'squatsCounter': 0,
+      'heelSlidesCounter': 0,
     }).then((_) {
       print(
-          'Squats counter initialized at ${angleDataRef.child('squatsCounter').path}');
+          'heelSlides counter initialized at ${angleDataRef.child('heelSlidesCounter').path}');
     }).catchError((error) {
-      print('Failed to initialize squats counter: $error');
+      print('Failed to initialize heelSlides counter: $error');
     });
   }
 
@@ -42,7 +37,7 @@ class _SquatsCounterState extends State<SquatsCounter> {
     final DatabaseReference angleDataRef =
         FirebaseDatabase.instance.ref().child('users/$userUid/angle_data');
     angleDataRef.update({
-      'squatsBool': false,
+      'heelSlidesBool': false,
     }).then((_) {
       print('Data updated at ${angleDataRef.path}');
     }).catchError((error) {
@@ -75,7 +70,7 @@ class _SquatsCounterState extends State<SquatsCounter> {
                     ),
                   ),
                   Text(
-                    'Squats Counter',
+                    'Heel Slides Counter',
                     style: GoogleFonts.raleway(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -91,22 +86,7 @@ class _SquatsCounterState extends State<SquatsCounter> {
                   Column(
                     children: [
                       Text(
-                        'Initial Squat Angle:',
-                        style: GoogleFonts.raleway(
-                          fontSize: 24,
-                          color: Colors.lightGreen,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 5),
-                      GetAngleInfo(component: AngleComponent.topSquatsYAngle),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-                  Column(
-                    children: [
-                      Text(
-                        'Final Squat Angle:',
+                        'Initial Heel Slide Angle:',
                         style: GoogleFonts.raleway(
                           fontSize: 24,
                           color: Colors.lightGreen,
@@ -115,7 +95,23 @@ class _SquatsCounterState extends State<SquatsCounter> {
                       ),
                       SizedBox(height: 5),
                       GetAngleInfo(
-                        component: AngleComponent.bottomSquatsYAngle,
+                          component: AngleComponent.topHeelSlidesYAngle),
+                    ],
+                  ),
+                  SizedBox(height: 10),
+                  Column(
+                    children: [
+                      Text(
+                        'Final Heel Slide Angle:',
+                        style: GoogleFonts.raleway(
+                          fontSize: 24,
+                          color: Colors.lightGreen,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      GetAngleInfo(
+                        component: AngleComponent.bottomHeelSlidesYAngle,
                       ),
                     ],
                   ),
@@ -147,26 +143,19 @@ class _SquatsCounterState extends State<SquatsCounter> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Total Squats:',
+                      'Total Heel Slides:',
                       style: GoogleFonts.raleway(
                         fontSize: 24,
                         color: Colors.lightGreen,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    GetAngleInfo(component: AngleComponent.squatsCounter),
+                    GetAngleInfo(component: AngleComponent.heelSlidesCounter),
                     Spacer(),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10.0),
                       child: ElevatedButton(
-                        onPressed: () async {
-                          await showSessionSuccessDialog();
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => HomeNavigator(),
-                            ),
-                          );
-                        },
+                        onPressed: () {},
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.lightGreen,
                           padding: EdgeInsets.all(20),
@@ -193,65 +182,5 @@ class _SquatsCounterState extends State<SquatsCounter> {
         ),
       ),
     );
-  }
-
-  Future showSessionSuccessDialog() async {
-    return showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return Padding(
-              padding: EdgeInsets.all(20),
-              child: Center(
-                child: Container(
-                  padding: EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    color: Colors.grey[200],
-                  ),
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Text(
-                      'Great Job!',
-                      style: GoogleFonts.raleway(
-                        decoration: TextDecoration.none,
-                        color: Colors.lightGreen[800],
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Congratulations on completing a session! Check out the Graphs Page to view more details...',
-                      style: GoogleFonts.raleway(
-                        decoration: TextDecoration.none,
-                        color: Colors.lightGreen[800],
-                        fontSize: 16,
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context); // dismiss the dialog box
-                      },
-                      style: ElevatedButton.styleFrom(
-                        textStyle: GoogleFonts.raleway(
-                          color: Colors.lightGreen,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                        backgroundColor: Colors.white,
-                      ),
-                      child: Text(
-                        'OK',
-                        style: GoogleFonts.raleway(
-                          decoration: TextDecoration.none,
-                          color: Colors.black,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ]),
-                ),
-              ));
-        });
   }
 }

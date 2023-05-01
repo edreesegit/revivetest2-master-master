@@ -5,12 +5,22 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-enum AngleComponent { squatCounter, kneeExtensionsCounter, heelSlidesCounter }
+enum AngleComponent {
+  squatsCounter,
+  kneeExtensionsCounter,
+  heelSlidesCounter,
+  bottomSquatsYAngle,
+  topSquatsYAngle,
+  bottomKneeExtensionsYAngle,
+  topKneeExtensionsYAngle,
+  bottomHeelSlidesYAngle,
+  topHeelSlidesYAngle
+}
 
 class GetAngleInfo extends StatelessWidget {
   final AngleComponent component;
 
-  GetAngleInfo({required this.component, required TextStyle style});
+  GetAngleInfo({required this.component});
 
   @override
   Widget build(BuildContext context) {
@@ -28,24 +38,53 @@ class GetAngleInfo extends StatelessWidget {
         if (snapshot.hasData && snapshot.data!.snapshot.value != null) {
           final dynamic value = snapshot.data!.snapshot.value;
           Map<dynamic, dynamic> userData = value;
-          final String squatCounter = userData.containsKey('squatCounter')
-              ? userData['squatCounter'].toString()
+          final String squatsCounter = userData.containsKey('squatsCounter')
+              ? userData['squatsCounter'].toString()
               : '';
 
           final String kneeExtensionsCounter =
               userData.containsKey('kneeExtensionsCounter')
-                  ? userData['kneeExtensionsCounter']
+                  ? userData['kneeExtensionsCounter'].toString()
                   : '';
 
           final String heelSlidesCounter =
               userData.containsKey('heelSlidesCounter')
-                  ? userData['heelSlidesCounter']
+                  ? userData['heelSlidesCounter'].toString()
                   : '';
 
+          final String bottomSquatsYAngle =
+              userData.containsKey('bottomSquatsYAngle')
+                  ? '${userData['bottomSquatsYAngle'].toStringAsFixed(2)}\u00B0'
+                  : '';
+
+          final String topSquatsYAngle = userData.containsKey('topSquatsYAngle')
+              ? '${userData['topSquatsYAngle'].toStringAsFixed(2)}\u00B0'
+              : '';
+
+          final String bottomHeelSlidesYAngle = userData
+                  .containsKey('bottomHeelSlidesYAngle')
+              ? '${userData['bottomHeelSlidesYAngle'].toStringAsFixed(2)}\u00B0'
+              : '';
+
+          final String topHeelSlidesYAngle = userData
+                  .containsKey('topHeelSlidesYAngle')
+              ? '${userData['topHeelSlidesYAngle'].toStringAsFixed(2)}\u00B0'
+              : '';
+
+          final String bottomKneeExtensionsYAngle = userData
+                  .containsKey('bottomKneeExtensionsYAngle')
+              ? '${userData['bottomKneeExtensionsYAngle'].toStringAsFixed(2)}\u00B0'
+              : '';
+
+          final String topKneeExtensionsYAngle = userData
+                  .containsKey('topKneeExtensionsYAngle')
+              ? '${userData['topKneeExtensionsYAngle'].toStringAsFixed(2)}\u00B0'
+              : '';
+
           switch (component) {
-            case AngleComponent.squatCounter:
+            case AngleComponent.squatsCounter:
               return Text(
-                squatCounter,
+                squatsCounter,
                 style: GoogleFonts.raleway(
                   fontSize: 128,
                   color: Colors.lightGreen[800],
@@ -56,7 +95,7 @@ class GetAngleInfo extends StatelessWidget {
               return Text(
                 kneeExtensionsCounter,
                 style: GoogleFonts.raleway(
-                  fontSize: 16,
+                  fontSize: 128,
                   color: Colors.lightGreen[800],
                   fontWeight: FontWeight.bold,
                 ),
@@ -65,7 +104,61 @@ class GetAngleInfo extends StatelessWidget {
               return Text(
                 heelSlidesCounter,
                 style: GoogleFonts.raleway(
-                  fontSize: 16,
+                  fontSize: 128,
+                  color: Colors.lightGreen[800],
+                  fontWeight: FontWeight.bold,
+                ),
+              );
+            case AngleComponent.bottomSquatsYAngle:
+              return Text(
+                bottomSquatsYAngle,
+                style: GoogleFonts.raleway(
+                  fontSize: 36,
+                  color: Colors.lightGreen[800],
+                  fontWeight: FontWeight.bold,
+                ),
+              );
+            case AngleComponent.topSquatsYAngle:
+              return Text(
+                topSquatsYAngle,
+                style: GoogleFonts.raleway(
+                  fontSize: 36,
+                  color: Colors.lightGreen[800],
+                  fontWeight: FontWeight.bold,
+                ),
+              );
+            case AngleComponent.bottomKneeExtensionsYAngle:
+              return Text(
+                bottomKneeExtensionsYAngle,
+                style: GoogleFonts.raleway(
+                  fontSize: 36,
+                  color: Colors.lightGreen[800],
+                  fontWeight: FontWeight.bold,
+                ),
+              );
+            case AngleComponent.topKneeExtensionsYAngle:
+              return Text(
+                topKneeExtensionsYAngle,
+                style: GoogleFonts.raleway(
+                  fontSize: 36,
+                  color: Colors.lightGreen[800],
+                  fontWeight: FontWeight.bold,
+                ),
+              );
+            case AngleComponent.bottomHeelSlidesYAngle:
+              return Text(
+                bottomHeelSlidesYAngle,
+                style: GoogleFonts.raleway(
+                  fontSize: 36,
+                  color: Colors.lightGreen[800],
+                  fontWeight: FontWeight.bold,
+                ),
+              );
+            case AngleComponent.topHeelSlidesYAngle:
+              return Text(
+                topHeelSlidesYAngle,
+                style: GoogleFonts.raleway(
+                  fontSize: 36,
                   color: Colors.lightGreen[800],
                   fontWeight: FontWeight.bold,
                 ),

@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:revivetest2/postcalibration/knee_extensions_counter.dart';
 
 class KneeExtensionsCalibration extends StatefulWidget {
   const KneeExtensionsCalibration({super.key});
@@ -15,32 +16,32 @@ class KneeExtensionsCalibration extends StatefulWidget {
 
 class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
   // Define variables to store the min and max values
-  double _minKneeExtensionsyAngle = 0.0;
-  double _maxKneeExtensionsyAngle = 0.0;
+  double _permanenttopKneeExtensionsYAngle = 0.0;
+  double _permanentbottomKneeExtensionsYAngle = double.infinity;
+  double _topKneeExtensionsYAngle = 0.0;
+  double _bottomKneeExtensionsYAngle = 0.0;
+  bool _istopKneeExtensionsCalibrated = false;
+  bool _isbottomKneeExtensionsCalibrated = false;
 
-  double _permanentMinKneeExtensionsyAngle = double.infinity;
-  double _permanentMaxKneeExtensionsyAngle = 0.0;
-
-  bool _isMinExtensionsCalibrated = false;
-  bool _isMaxExtensionsCalibrated = false;
   // Create a reference to the Firebase RTDB
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref();
 
   @override
   void initState() {
     super.initState();
+
     _databaseRef.child('sensor_data').onChildChanged.listen((event) {
       if (event.snapshot.key == 'yAngle') {
         double yAngle = double.parse(event.snapshot.value.toString());
         if (mounted) {
           setState(() {
-            if (_minKneeExtensionsyAngle == 0.0 ||
-                yAngle < _minKneeExtensionsyAngle) {
-              _minKneeExtensionsyAngle = yAngle;
+            if (_topKneeExtensionsYAngle == 0.0 ||
+                yAngle > _topKneeExtensionsYAngle) {
+              _topKneeExtensionsYAngle = yAngle;
             }
-            if (_maxKneeExtensionsyAngle == 0.0 ||
-                yAngle > _maxKneeExtensionsyAngle) {
-              _maxKneeExtensionsyAngle = yAngle;
+            if (_bottomKneeExtensionsYAngle == 0.0 ||
+                yAngle < _bottomKneeExtensionsYAngle) {
+              _bottomKneeExtensionsYAngle = yAngle;
             }
           });
         }
@@ -69,11 +70,13 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
                     },
                   ),
                   SizedBox(width: 10),
-                  Text(
-                    'Knee Extensions Calibration',
-                    style: GoogleFonts.raleway(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                  Flexible(
+                    child: Text(
+                      'Knee Extensions Calibration',
+                      style: GoogleFonts.raleway(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -102,7 +105,7 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
                 children: [
                   ElevatedButton(
                     onPressed: () async {
-                      await _startMinKneeExtensionsCalibrationAsync();
+                      await _starttopKneeExtensionsCalibrationAsync();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.lightGreen,
@@ -121,7 +124,7 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
                   SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: () async {
-                      await _startMaxKneeExtensionsCalibrationAsync();
+                      await _startbottomKneeExtensionsCalibrationAsync();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.lightGreen,
@@ -139,8 +142,8 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
                   ),
                   SizedBox(height: 10),
                   Visibility(
-                    visible: _isMinExtensionsCalibrated ||
-                        _isMaxExtensionsCalibrated, // show only when either min or max is visible
+                    visible: _istopKneeExtensionsCalibrated ||
+                        _isbottomKneeExtensionsCalibrated, // show only when either min or max is visible
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.lightGreen[
@@ -153,9 +156,9 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_isMinExtensionsCalibrated)
+                          if (_istopKneeExtensionsCalibrated)
                             Text(
-                              'Initial Angle: ${_permanentMinKneeExtensionsyAngle.toStringAsFixed(2)}\u00B0',
+                              'Initial Angle: ${_permanenttopKneeExtensionsYAngle.toStringAsFixed(2)}\u00B0',
                               style: GoogleFonts.raleway(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -163,9 +166,9 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
                               ),
                             ),
                           SizedBox(height: 10),
-                          if (_isMaxExtensionsCalibrated)
+                          if (_isbottomKneeExtensionsCalibrated)
                             Text(
-                              'Final Angle: ${_permanentMaxKneeExtensionsyAngle.toStringAsFixed(2)}\u00B0',
+                              'Final Angle: ${_permanentbottomKneeExtensionsYAngle.toStringAsFixed(2)}\u00B0',
                               style: GoogleFonts.raleway(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -178,18 +181,31 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
                   ),
                   SizedBox(height: 20),
                   AnimatedOpacity(
-                    opacity:
-                        _isMinExtensionsCalibrated && _isMaxExtensionsCalibrated
-                            ? 1.0
-                            : 0.0,
+                    opacity: _istopKneeExtensionsCalibrated &&
+                            _isbottomKneeExtensionsCalibrated
+                        ? 1.0
+                        : 0.0,
                     duration: Duration(milliseconds: 500),
                     curve: Curves.easeInOut,
                     child: Visibility(
-                      visible: _isMinExtensionsCalibrated &&
-                          _isMaxExtensionsCalibrated,
+                      visible: _istopKneeExtensionsCalibrated &&
+                          _isbottomKneeExtensionsCalibrated,
                       child: ElevatedButton(
-                        onPressed: () {
-                          // TODO: Add functionality for ready button
+                        onPressed: () async {
+                          final userUid =
+                              FirebaseAuth.instance.currentUser?.uid;
+                          final DatabaseReference angleDataRef =
+                              FirebaseDatabase.instance
+                                  .ref()
+                                  .child('users/$userUid/angle_data');
+                          angleDataRef.update({
+                            'kneeExtensionsBool': true,
+                          });
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => KneeExtensionsCounter()),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.lightGreen,
@@ -200,7 +216,7 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
                               horizontal: 40, vertical: 20),
                         ),
                         child: Text(
-                          'Ready to Start ?',
+                          'Ready to Start?',
                           style: GoogleFonts.raleway(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -218,120 +234,265 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
     );
   }
 
-  Future<void> _startMinKneeExtensionsCalibrationAsync() async {
+  Future<void> _starttopKneeExtensionsCalibrationAsync() async {
+    final userUid = FirebaseAuth.instance.currentUser?.uid;
+    final DatabaseReference boolRef =
+        FirebaseDatabase.instance.ref().child('users/$userUid/angle_data');
+    boolRef.update({
+      'kneeExtensionsBool': false,
+    });
     // Reset the min value before starting calibration
     if (mounted) {
       setState(() {
-        _minKneeExtensionsyAngle = 0.0;
-        _permanentMinKneeExtensionsyAngle = double.infinity;
+        _topKneeExtensionsYAngle = 0.0;
+        _permanenttopKneeExtensionsYAngle = double.infinity;
       });
     }
-    _isMinExtensionsCalibrated = false;
+    _istopKneeExtensionsCalibrated = false;
     // Display a dialog to indicate that calibration is in progress
     showDialog(
-      barrierDismissible: false, // set barrierDismissible to false
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Calibrating...'),
-        content: Text(
-            'Please stand in the starting position of the knee extension.'),
-      ),
-    );
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Padding(
+            padding: EdgeInsets.all(20),
+            child: Center(
+              child: Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.grey[200],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(
+                      child: Text(
+                        'Calibrating...',
+                        style: GoogleFonts.raleway(
+                          decoration: TextDecoration.none,
+                          color: Colors.lightGreen[800],
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
 
     // Wait for 5 seconds to collect samples
     await Future.delayed(Duration(seconds: 5));
 
-    if (_minKneeExtensionsyAngle < _permanentMinKneeExtensionsyAngle) {
-      _permanentMinKneeExtensionsyAngle = _minKneeExtensionsyAngle;
+    if (_topKneeExtensionsYAngle < _permanenttopKneeExtensionsYAngle) {
+      _permanenttopKneeExtensionsYAngle = _topKneeExtensionsYAngle;
     }
     // Save the min value to the Firebase RTDB
-    final userUid = FirebaseAuth.instance.currentUser?.uid;
-    final angleDataRef = _databaseRef.child('users/$userUid/angle_data');
+    final DatabaseReference angleDataRef =
+        _databaseRef.child('users/$userUid/angle_data');
     final snapshot = await angleDataRef.once();
     if (snapshot.snapshot.value == null) {
       // There is no data at this location, so use .set() to create the data
       await angleDataRef.set({
-        'minKneeExtensionsyAngle': _permanentMinKneeExtensionsyAngle,
+        'topKneeExtensionsYAngle': _permanenttopKneeExtensionsYAngle,
       });
     } else {
       // Data already exists, so use .update() to update the existing data
       await angleDataRef.update({
-        'minKneeExtensionsyAngle': _permanentMinKneeExtensionsyAngle,
+        'topKneeExtensionsYAngle': _permanenttopKneeExtensionsYAngle,
       });
     }
-    if (_permanentMinKneeExtensionsyAngle != 0.0 &&
-        _permanentMinKneeExtensionsyAngle != double.infinity) {
+    if (_permanenttopKneeExtensionsYAngle != 0.0 &&
+        _permanenttopKneeExtensionsYAngle != double.infinity) {
       if (mounted) {
         showDialog(
-          barrierDismissible: false,
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Calibration Successful'),
-            content: Text('Minimum calibration value saved.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // first pop
-                  Navigator.pop(context); // second pop
-                  _isMinExtensionsCalibrated = true;
-                },
-                child: Text('OK'),
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.grey[200],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Center(
+                        child: Text(
+                          'Calibration Successful',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Center(
+                        child: Text(
+                          'Initial position has been calibrated. \nPress OK to continue...',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pop();
+                          _istopKneeExtensionsCalibrated = true;
+                        },
+                        child: Text(
+                          'OK',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ],
-          ),
+            );
+          },
         );
       }
     } else {
       if (mounted) {
         showDialog(
           context: context,
-          barrierDismissible: false, // set barrierDismissible to true
-          builder: (context) => AlertDialog(
-            title: Text('Calibration Error'),
-            content:
-                Text('Please ensure that the sensor is calibrated correctly.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // first pop
-                  Navigator.pop(context);
-                },
-                child: Text('OK'),
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.grey[200],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Center(
+                        child: Text(
+                          'Calibration Error',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Center(
+                        child: Text(
+                          'Initial position has not been calibrated, please try again. \nPress OK to continue...',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pop();
+                        },
+                        child: Text(
+                          'OK',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ],
-          ),
+            );
+          },
         );
       }
     }
   }
 
-  Future<void> _startMaxKneeExtensionsCalibrationAsync() async {
+  Future<void> _startbottomKneeExtensionsCalibrationAsync() async {
     // Reset the min value before starting calibration
     if (mounted) {
       setState(() {
-        _maxKneeExtensionsyAngle = 0.0;
-        _permanentMaxKneeExtensionsyAngle = 0.0;
+        _bottomKneeExtensionsYAngle = 0.0;
+        _permanentbottomKneeExtensionsYAngle = 0.0;
       });
     }
-    _isMaxExtensionsCalibrated = false;
+    _isbottomKneeExtensionsCalibrated = false;
 
     // Display a dialog to indicate that calibration is in progress
     showDialog(
-      barrierDismissible: false, // set barrierDismissible to false
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Calibrating...'),
-        content:
-            Text('Please stand in the final position of the knee extension.'),
-      ),
-    );
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Padding(
+            padding: EdgeInsets.all(20),
+            child: Center(
+              child: Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.grey[200],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(
+                      child: Text(
+                        'Calibrating...',
+                        style: GoogleFonts.raleway(
+                          decoration: TextDecoration.none,
+                          color: Colors.lightGreen[800],
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
     // Wait for 5 seconds to collect samples
     await Future.delayed(Duration(seconds: 5));
 
-    if (_maxKneeExtensionsyAngle > _permanentMaxKneeExtensionsyAngle) {
-      _permanentMaxKneeExtensionsyAngle = _maxKneeExtensionsyAngle;
+    if (_bottomKneeExtensionsYAngle > _permanentbottomKneeExtensionsYAngle) {
+      _permanentbottomKneeExtensionsYAngle = _bottomKneeExtensionsYAngle;
     }
-    print(_permanentMaxKneeExtensionsyAngle);
+
     // Save the min value to the Firebase RTDB
     final userUid = FirebaseAuth.instance.currentUser?.uid;
     final angleDataRef = _databaseRef.child('users/$userUid/angle_data');
@@ -339,55 +500,148 @@ class _KneeExtensionsCalibrationState extends State<KneeExtensionsCalibration> {
     if (snapshot.snapshot.value == null) {
       // There is no data at this location, so use .set() to create the data
       await angleDataRef.set({
-        'maxKneeExtensionsyAngle': _permanentMaxKneeExtensionsyAngle,
+        'bottomKneeExtensionsYAngle': _permanentbottomKneeExtensionsYAngle,
       });
     } else {
       // Data already exists, so use .update() to update the existing data
       await angleDataRef.update({
-        'maxKneeExtensionsyAngle': _permanentMaxKneeExtensionsyAngle,
+        'bottomKneeExtensionsYAngle': _permanentbottomKneeExtensionsYAngle,
       });
     }
-    if (_permanentMaxKneeExtensionsyAngle != 0.0 &&
-        _permanentMaxKneeExtensionsyAngle != double.infinity) {
+    if (_permanentbottomKneeExtensionsYAngle != 0.0 &&
+        _permanentbottomKneeExtensionsYAngle != double.infinity) {
       if (mounted) {
         showDialog(
-          barrierDismissible: false,
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Calibration Successful'),
-            content: Text('Maximum calibration value saved.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // first pop
-                  Navigator.pop(context); // second pop
-                  _isMaxExtensionsCalibrated = true;
-                },
-                child: Text('OK'),
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.grey[200],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Center(
+                        child: Text(
+                          'Calibration Successful',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Center(
+                        child: Text(
+                          'Final position has been calibrated. \nPress OK to continue...',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pop();
+                          _isbottomKneeExtensionsCalibrated = true;
+                        },
+                        child: Text(
+                          'OK',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ],
-          ),
+            );
+          },
         );
       }
     } else {
       if (mounted) {
         showDialog(
-          barrierDismissible: false,
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Calibration Error'),
-            content:
-                Text('Please ensure that the sensor is calibrated correctly.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // first pop
-                  Navigator.pop(context);
-                },
-                child: Text('OK'),
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.grey[200],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Center(
+                        child: Text(
+                          'Calibration Error',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Center(
+                        child: Text(
+                          'Final position has not been calibrated, please try again. \nPress OK to continue...',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pop();
+                        },
+                        child: Text(
+                          'OK',
+                          style: GoogleFonts.raleway(
+                            decoration: TextDecoration.none,
+                            color: Colors.lightGreen[800],
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ],
-          ),
+            );
+          },
         );
       }
     }
