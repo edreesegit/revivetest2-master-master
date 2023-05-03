@@ -234,7 +234,7 @@ class _SquatsCalibrationState extends State<SquatsCalibration> {
     final userUid = FirebaseAuth.instance.currentUser?.uid;
     final DatabaseReference boolRef =
         FirebaseDatabase.instance.ref().child('users/$userUid/angle_data');
-    boolRef.update({
+    await boolRef.update({
       'squatsBool': false,
     });
     // Reset the min value before starting calibration

@@ -35,7 +35,9 @@ class _SignInPageState extends State<SignInPage> {
       );
 
       // If sign-in is successful, dismiss the loading circle and navigate to home page
-      Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     } on FirebaseAuthException {
       // If sign-in fails, dismiss the loading circle and show error message
       await Future.delayed(Duration(milliseconds: 500));
